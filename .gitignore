@@ -1,5 +1,7 @@
 # Excel files
 *.xlsx
+!EVDS_06-07-2026.xlsx
+!tufe_verisi.xlsx
 
 # Python cache
 __pycache__/
