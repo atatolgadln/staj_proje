@@ -1,0 +1,1777 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insurance Value Prediction System</title>
+    <meta name="description"
+        content="XGBoost-based intelligent vehicle insurance value prediction system. Select brand and type to get instant value prediction.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a14;
+            --bg-secondary: #12121f;
+            --surface: rgba(255, 255, 255, 0.03);
+            --surface-hover: rgba(255, 255, 255, 0.06);
+            --border: rgba(255, 255, 255, 0.07);
+            --border-focus: rgba(0, 212, 170, 0.4);
+            --text-primary: #f0f0f5;
+            --text-secondary: rgba(240, 240, 245, 0.55);
+            --text-muted: rgba(240, 240, 245, 0.35);
+            --accent: #00d4aa;
+            --accent-dim: rgba(0, 212, 170, 0.15);
+            --accent-secondary: #7c3aed;
+            --gradient-main: linear-gradient(135deg, #00d4aa 0%, #7c3aed 100%);
+            --gradient-bg: radial-gradient(ellipse at 20% 50%, rgba(0, 212, 170, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(124, 58, 237, 0.06) 0%, transparent 60%);
+            --radius-sm: 10px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--border);
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem 4rem;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: var(--gradient-bg);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header__badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            background: var(--accent-dim);
+            border: 1px solid rgba(0, 212, 170, 0.2);
+            border-radius: 100px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 1.2rem;
+        }
+
+        .header__badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse-dot {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.4;
+                transform: scale(0.7);
+            }
+        }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 800;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.03em;
+            line-height: 1.15;
+        }
+
+        .header__sub {
+            margin-top: 0.6rem;
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .card {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 560px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            box-shadow: var(--shadow-card);
+        }
+
+        .card+.card {
+            margin-top: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.5rem;
+        }
+
+        select,
+        input[type="number"] {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            outline: none;
+            transition: var(--transition);
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+        select {
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='rgba(240,240,245,0.35)' viewBox='0 0 16 16'%3E%3Cpath d='M4.646 6.646a.5.5 0 0 1 .708 0L8 9.293l2.646-2.647a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.8rem center;
+            padding-right: 2.5rem;
+        }
+
+        select:focus,
+        input[type="number"]:focus {
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgba(0, 212, 170, 0.08);
+        }
+
+        select:hover,
+        input[type="number"]:hover {
+            background: var(--surface-hover);
+        }
+
+        select option {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            opacity: 0.3;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .btn-predict {
+            width: 100%;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: var(--gradient-main);
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-predict::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 60%);
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .btn-predict:hover::before {
+            opacity: 1;
+        }
+
+        .btn-predict:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 212, 170, 0.25);
+        }
+
+        .btn-predict:active {
+            transform: translateY(0);
+        }
+
+        .btn-predict:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .result-card {
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-card__title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .result-card__title::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+        }
+
+        .result-hero {
+            text-align: center;
+            padding: 1.5rem 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        .result-hero__label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.4rem;
+        }
+
+        .result-hero__value {
+            font-size: clamp(2rem, 5vw, 2.8rem);
+            font-weight: 800;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        .result-hero__usd {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-top: 0.3rem;
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .result-item {
+            padding: 0.85rem 1rem;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+
+        .result-item__label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.3rem;
+        }
+
+        .result-item__value {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .comparison {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: var(--radius-sm);
+            border: 1px solid;
+            text-align: center;
+        }
+
+        .comparison--positive {
+            border-color: rgba(0, 212, 170, 0.2);
+            background: rgba(0, 212, 170, 0.05);
+        }
+
+        .comparison--negative {
+            border-color: rgba(239, 68, 68, 0.2);
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .comparison__label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.3rem;
+        }
+
+        .comparison--positive .comparison__label {
+            color: var(--accent);
+        }
+
+        .comparison--negative .comparison__label {
+            color: #ef4444;
+        }
+
+        .comparison__values {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .comparison__real {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .comparison__diff {
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
+        .comparison--positive .comparison__diff {
+            color: var(--accent);
+            background: rgba(0, 212, 170, 0.1);
+        }
+
+        .comparison--negative .comparison__diff {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .comparison__none {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .error-msg {
+            text-align: center;
+            color: #ef4444;
+            font-weight: 500;
+            font-size: 0.9rem;
+            padding: 1rem;
+            background: rgba(239, 68, 68, 0.06);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            border-radius: var(--radius-sm);
+            animation: slideUp 0.3s ease;
+        }
+
+        select:disabled {
+            opacity: 0.4;
+        }
+
+        .segment-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .segment-badge--low {
+            background: rgba(52, 211, 153, 0.12);
+            color: #34d399;
+            border: 1px solid rgba(52, 211, 153, 0.2);
+        }
+
+        .segment-badge--med {
+            background: rgba(59, 130, 246, 0.12);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .segment-badge--high {
+            background: rgba(168, 85, 247, 0.12);
+            color: #c084fc;
+            border: 1px solid rgba(168, 85, 247, 0.2);
+        }
+
+        .segment-row {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .footer {
+            margin-top: 3rem;
+            text-align: center;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            position: relative;
+            z-index: 1;
+        }
+
+        .charts-section {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 800px;
+            margin-top: 3rem;
+        }
+
+        .charts-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .charts-header h2 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            background: var(--gradient-main);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        .charts-header p {
+            margin-top: 0.4rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .chart-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            box-shadow: var(--shadow-card);
+            margin-bottom: 1.5rem;
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .chart-card__title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-card__title::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+        }
+
+        .chart-canvas-wrap {
+            position: relative;
+            width: 100%;
+        }
+
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .chart-loading {
+            text-align: center;
+            padding: 3rem 0;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .chart-loading .spinner {
+            display: block;
+            margin: 0 auto 0.8rem;
+            width: 24px;
+            height: 24px;
+            border-width: 2.5px;
+        }
+
+        .segment-detail {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .segment-detail__title {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.5rem;
+        }
+
+        .segment-detail__list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .segment-detail__tag {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 500;
+        }
+
+        .segment-detail__tag--high {
+            background: rgba(168, 85, 247, 0.1);
+            color: #c084fc;
+            border: 1px solid rgba(168, 85, 247, 0.15);
+        }
+
+        .segment-detail__tag--med {
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.15);
+        }
+
+        .segment-detail__tag--low {
+            background: rgba(52, 211, 153, 0.1);
+            color: #34d399;
+            border: 1px solid rgba(52, 211, 153, 0.15);
+        }
+
+        .segment-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+        }
+
+        .seg-tab-btn {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 0.65rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 6px;
+            transition: var(--transition);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            outline: none;
+        }
+
+        .seg-tab-btn:hover {
+            background: var(--surface-hover);
+            color: var(--text-primary);
+        }
+
+        .seg-tab-btn.active-high {
+            background: rgba(168, 85, 247, 0.15);
+            color: #c084fc;
+            border-color: rgba(168, 85, 247, 0.4);
+        }
+
+        .seg-tab-btn.active-med {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border-color: rgba(59, 130, 246, 0.4);
+        }
+
+        .seg-tab-btn.active-low {
+            background: rgba(52, 211, 153, 0.15);
+            color: #34d399;
+            border-color: rgba(52, 211, 153, 0.4);
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 1.2rem 0.8rem 3rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .result-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="header">
+        <h1>Insurance Value Prediction</h1>
+    </header>
+
+    <div class="card" id="form-card">
+        <div class="form-group">
+            <label for="marka-select">Brand</label>
+            <select id="marka-select" disabled>
+                <option value="">Loading...</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="tip-select">Type / Model</label>
+            <select id="tip-select" disabled>
+                <option value="">Select brand first</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="uretim-yili">Production Year</label>
+            <select id="uretim-yili" disabled>
+                <option value="">Select type first</option>
+            </select>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="hedef-yil">Target Year</label>
+                <select id="hedef-yil" disabled>
+                    <option value="">Loading...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="hedef-ay">Target Month</label>
+                <select id="hedef-ay" disabled>
+                    <option value="">Select year first</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="btn-predict" id="btn-predict" disabled onclick="tahminEt()">
+            Predict
+        </button>
+    </div>
+
+    <div id="result-container"></div>
+
+    <section class="charts-section" id="charts-section">
+        <div class="charts-header">
+            <h2>Data Analysis</h2>
+            <p>Mathematical and statistical representation of insurance data</p>
+        </div>
+
+        <div class="charts-row" style="grid-template-columns: 1fr 1fr; margin-bottom: 1.5rem;">
+            <div class="chart-card" id="chart-marka-card">
+                <div class="chart-card__title">Average Insurance Values by Brand (Top 15)</div>
+                <div class="chart-canvas-wrap">
+                    <div class="chart-loading" id="chart-marka-loading">
+                        <span class="spinner"></span>Loading chart...
+                    </div>
+                    <canvas id="chart-marka" style="display:none"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card" id="chart-model-card">
+                <div class="chart-card__title">Average Insurance Values by Model (Top 15)</div>
+                <div class="chart-canvas-wrap">
+                    <div class="chart-loading" id="chart-model-loading">
+                        <span class="spinner"></span>Loading chart...
+                    </div>
+                    <canvas id="chart-model" style="display:none"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="charts-row">
+            <div class="chart-card" id="chart-ekonomi-card">
+                <div class="chart-card__title">USD Rate, CPI (TÜFE) & Average Insurance Trend</div>
+                <div class="chart-canvas-wrap">
+                    <div class="chart-loading" id="chart-ekonomi-loading">
+                        <span class="spinner"></span>Loading chart...
+                    </div>
+                    <canvas id="chart-ekonomi" style="display:none"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card" id="chart-segment-card">
+                <div class="chart-card__title">Segment Distribution</div>
+                <div class="chart-canvas-wrap">
+                    <div class="chart-loading" id="chart-segment-loading">
+                        <span class="spinner"></span>Loading chart...
+                    </div>
+                    <canvas id="chart-segment" style="display:none"></canvas>
+                </div>
+                <div id="segment-detail-container"></div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        Dual-Model Segmented XGBoost &middot; USD & CPI Integrated Prediction
+    </footer>
+
+    <script>
+        let donemlerData = [];
+        let filteredDonemlerData = [];
+        const ayIsimleri = {
+            1: 'January', 2: 'February', 3: 'March', 4: 'April',
+            5: 'May', 6: 'June', 7: 'July', 8: 'August',
+            9: 'September', 10: 'October', 11: 'November', 12: 'December'
+        };
+
+        Chart.defaults.color = 'rgba(240,240,245,0.55)';
+        Chart.defaults.borderColor = 'rgba(255,255,255,0.07)';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        Chart.defaults.font.size = 11;
+        Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(10,10,20,0.9)';
+        Chart.defaults.plugins.tooltip.borderColor = 'rgba(255,255,255,0.1)';
+        Chart.defaults.plugins.tooltip.borderWidth = 1;
+        Chart.defaults.plugins.tooltip.cornerRadius = 8;
+        Chart.defaults.plugins.tooltip.padding = 10;
+        Chart.defaults.plugins.tooltip.titleFont = { weight: '600', size: 12 };
+        Chart.defaults.plugins.tooltip.bodyFont = { size: 11 };
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await Promise.all([loadMarkalar(), loadDonemler()]);
+            checkFormReady();
+            loadAllCharts();
+        });
+
+        async function loadAllCharts() {
+            await Promise.allSettled([
+                loadChartMarka(),
+                loadChartModel(),
+                loadChartEkonomi(),
+                loadChartSegment(),
+            ]);
+        }
+
+        async function loadChartMarka() {
+            try {
+                const res = await fetch('/grafik/marka-ortalama');
+                const data = await res.json();
+                document.getElementById('chart-marka-loading').style.display = 'none';
+                const canvas = document.getElementById('chart-marka');
+                canvas.style.display = 'block';
+
+                const ctx = canvas.getContext('2d');
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+                gradient.addColorStop(0, 'rgba(0,212,170,0.7)');
+                gradient.addColorStop(1, 'rgba(124,58,237,0.7)');
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Average Insurance (TL)',
+                            data: data.values,
+                            backgroundColor: gradient,
+                            borderRadius: 6,
+                            borderSkipped: false,
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        aspectRatio: 1.4,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => {
+                                        return ctx.parsed.x.toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' TL';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: 'rgba(255,255,255,0.04)' },
+                                ticks: {
+                                    callback: (v) => (v / 1000).toFixed(0) + 'K'
+                                }
+                            },
+                            y: {
+                                grid: { display: false },
+                                ticks: { font: { size: 10, weight: '500' } }
+                            }
+                        }
+                    }
+                });
+            } catch (e) {
+                document.getElementById('chart-marka-loading').textContent = 'Chart could not be loaded.';
+                console.error('Marka chart error:', e);
+            }
+        }
+
+        async function loadChartModel() {
+            try {
+                const res = await fetch('/grafik/model-ortalama');
+                const data = await res.json();
+                document.getElementById('chart-model-loading').style.display = 'none';
+                const canvas = document.getElementById('chart-model');
+                canvas.style.display = 'block';
+
+                const ctx = canvas.getContext('2d');
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+                gradient.addColorStop(0, 'rgba(124,58,237,0.7)');
+                gradient.addColorStop(1, 'rgba(0,212,170,0.7)');
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Average Insurance (TL)',
+                            data: data.values,
+                            backgroundColor: gradient,
+                            borderRadius: 6,
+                            borderSkipped: false,
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        aspectRatio: 1.4,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => {
+                                        return ctx.parsed.x.toLocaleString('en-US', { maximumFractionDigits: 0 }) + ' TL';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: 'rgba(255,255,255,0.04)' },
+                                ticks: {
+                                    callback: (v) => (v / 1000).toFixed(0) + 'K'
+                                }
+                            },
+                            y: {
+                                grid: { display: false },
+                                ticks: { font: { size: 9, weight: '500' } }
+                            }
+                        }
+                    }
+                });
+            } catch (e) {
+                document.getElementById('chart-model-loading').textContent = 'Chart could not be loaded.';
+                console.error('Model chart error:', e);
+            }
+        }
+
+        async function loadChartEkonomi() {
+            try {
+                const res = await fetch('/grafik/ekonomik-trend');
+                const data = await res.json();
+                document.getElementById('chart-ekonomi-loading').style.display = 'none';
+                const canvas = document.getElementById('chart-ekonomi');
+                canvas.style.display = 'block';
+
+                const ctx = canvas.getContext('2d');
+
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [
+                            {
+                                label: 'USD Rate (TL)',
+                                data: data.dolar,
+                                borderColor: '#00d4aa',
+                                backgroundColor: 'rgba(0,212,170,0.08)',
+                                borderWidth: 2,
+                                pointRadius: 2,
+                                pointHoverRadius: 5,
+                                tension: 0.35,
+                                fill: true,
+                                yAxisID: 'y',
+                            },
+                            {
+                                label: 'CPI (TUFE)',
+                                data: data.tufe,
+                                borderColor: '#c084fc',
+                                backgroundColor: 'rgba(192,132,252,0.08)',
+                                borderWidth: 2,
+                                pointRadius: 2,
+                                pointHoverRadius: 5,
+                                tension: 0.35,
+                                fill: true,
+                                yAxisID: 'y1',
+                            },
+                            {
+                                label: 'Avg. Insurance (TL)',
+                                data: data.kasko_ort,
+                                borderColor: '#f59e0b',
+                                backgroundColor: 'rgba(245,158,11,0.06)',
+                                borderWidth: 2.5,
+                                pointRadius: 2,
+                                pointHoverRadius: 5,
+                                tension: 0.35,
+                                fill: true,
+                                borderDash: [6, 3],
+                                yAxisID: 'y2',
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        aspectRatio: 1.6,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    padding: 16,
+                                    font: { size: 11, weight: '500' }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { color: 'rgba(255,255,255,0.04)' },
+                                ticks: {
+                                    maxRotation: 45,
+                                    maxTicksLimit: 12,
+                                    font: { size: 9 }
+                                }
+                            },
+                            y: {
+                                position: 'left',
+                                title: { display: true, text: 'USD (TL)', color: '#00d4aa', font: { size: 10, weight: '600' } },
+                                grid: { color: 'rgba(255,255,255,0.04)' },
+                            },
+                            y1: {
+                                position: 'right',
+                                title: { display: true, text: 'CPI (TUFE)', color: '#c084fc', font: { size: 10, weight: '600' } },
+                                grid: { drawOnChartArea: false },
+                            },
+                            y2: {
+                                position: 'right',
+                                title: { display: true, text: 'Insurance (TL)', color: '#f59e0b', font: { size: 10, weight: '600' } },
+                                grid: { drawOnChartArea: false },
+                                ticks: {
+                                    callback: (v) => (v / 1000).toFixed(0) + 'K'
+                                },
+                            }
+                        }
+                    }
+                });
+            } catch (e) {
+                document.getElementById('chart-ekonomi-loading').textContent = 'Chart could not be loaded.';
+                console.error('Ekonomi chart error:', e);
+            }
+        }
+
+        async function loadChartSegment() {
+            try {
+                const res = await fetch('/grafik/segment-dagilim');
+                const data = await res.json();
+                document.getElementById('chart-segment-loading').style.display = 'none';
+                const canvas = document.getElementById('chart-segment');
+                canvas.style.display = 'block';
+
+                const ctx = canvas.getContext('2d');
+                const total = data.values.reduce((a, b) => a + b, 0);
+                const detailContainer = document.getElementById('segment-detail-container');
+
+                function updateSegmentUI(index) {
+                    if (!document.getElementById('segment-brands-list')) {
+                        let html = '<div class="segment-detail">';
+                        html += `
+                            <div class="segment-tabs">
+                                <button id="btn-seg-high" class="seg-tab-btn">High</button>
+                                <button id="btn-seg-med" class="seg-tab-btn">Medium</button>
+                                <button id="btn-seg-low" class="seg-tab-btn">Low</button>
+                            </div>
+                            <div id="segment-brands-list" class="segment-detail__list" style="max-height: 150px; overflow-y: auto; padding-right: 4px;">
+                            </div>
+                        `;
+                        html += '</div>';
+                        detailContainer.innerHTML = html;
+
+                        document.getElementById('btn-seg-high').addEventListener('click', () => {
+                            updateSegmentUI(0);
+                        });
+                        document.getElementById('btn-seg-med').addEventListener('click', () => {
+                            updateSegmentUI(1);
+                        });
+                        document.getElementById('btn-seg-low').addEventListener('click', () => {
+                            updateSegmentUI(2);
+                        });
+                    }
+
+                    const btnHigh = document.getElementById('btn-seg-high');
+                    const btnMed = document.getElementById('btn-seg-med');
+                    const btnLow = document.getElementById('btn-seg-low');
+
+                    btnHigh.className = 'seg-tab-btn';
+                    btnMed.className = 'seg-tab-btn';
+                    btnLow.className = 'seg-tab-btn';
+
+                    let list = [];
+                    let tagClass = '';
+
+                    if (index === 0) {
+                        btnHigh.className = 'seg-tab-btn active-high';
+                        list = data.detay.high_markalar;
+                        tagClass = 'segment-detail__tag--high';
+                    } else if (index === 1) {
+                        btnMed.className = 'seg-tab-btn active-med';
+                        list = data.detay.med_markalar;
+                        tagClass = 'segment-detail__tag--med';
+                    } else {
+                        btnLow.className = 'seg-tab-btn active-low';
+                        list = data.detay.low_markalar;
+                        tagClass = 'segment-detail__tag--low';
+                    }
+
+                    // Render brands list
+                    const brandsList = document.getElementById('segment-brands-list');
+                    let tagsHTML = '';
+                    list.forEach(m => {
+                        tagsHTML += `<span class="segment-detail__tag ${tagClass}">${m}</span>`;
+                    });
+                    brandsList.innerHTML = tagsHTML;
+                }
+
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            data: data.values,
+                            backgroundColor: [
+                                'rgba(168,85,247,0.65)',
+                                'rgba(59,130,246,0.65)',
+                                'rgba(52,211,153,0.65)',
+                            ],
+                            borderColor: [
+                                'rgba(168,85,247,0.9)',
+                                'rgba(59,130,246,0.9)',
+                                'rgba(52,211,153,0.9)',
+                            ],
+                            borderWidth: 1.5,
+                            hoverOffset: 8,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        aspectRatio: 1.2,
+                        cutout: '60%',
+                        onHover: (event, activeElements) => {
+                            if (activeElements && activeElements.length > 0) {
+                                const index = activeElements[0].index;
+                                updateSegmentUI(index);
+                            }
+                        },
+                        onClick: (event, activeElements) => {
+                            if (activeElements && activeElements.length > 0) {
+                                const index = activeElements[0].index;
+                                updateSegmentUI(index);
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    usePointStyle: true,
+                                    pointStyle: 'circle',
+                                    padding: 16,
+                                    font: { size: 11, weight: '500' }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => {
+                                        const pct = ((ctx.parsed / total) * 100).toFixed(1);
+                                        return `${ctx.label}: ${ctx.parsed.toLocaleString('en-US')} records (${pct}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                updateSegmentUI(0);
+
+            } catch (e) {
+                document.getElementById('chart-segment-loading').textContent = 'Chart could not be loaded.';
+                console.error('Segment chart error:', e);
+            }
+        }
+
+        async function loadMarkalar() {
+            try {
+                const res = await fetch('/markalar');
+                const data = await res.json();
+                const sel = document.getElementById('marka-select');
+                sel.innerHTML = '<option value="">Select brand...</option>';
+                data.markalar.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m;
+                    opt.textContent = m;
+                    sel.appendChild(opt);
+                });
+                sel.disabled = false;
+                sel.addEventListener('change', onMarkaChange);
+            } catch (e) {
+                console.error('Error loading brands:', e);
+            }
+        }
+
+        async function onMarkaChange() {
+            const marka = document.getElementById('marka-select').value;
+            const tipSel = document.getElementById('tip-select');
+            const uretimSel = document.getElementById('uretim-yili');
+            const yilSel = document.getElementById('hedef-yil');
+            const aySel = document.getElementById('hedef-ay');
+
+            if (!marka) {
+                tipSel.innerHTML = '<option value="">Select brand first</option>';
+                tipSel.disabled = true;
+                uretimSel.innerHTML = '<option value="">Select type first</option>';
+                uretimSel.disabled = true;
+                yilSel.innerHTML = '<option value="">Select production year first</option>';
+                yilSel.disabled = true;
+                aySel.innerHTML = '<option value="">Select year first</option>';
+                aySel.disabled = true;
+                checkFormReady();
+                return;
+            }
+
+            tipSel.innerHTML = '<option value="">Loading...</option>';
+            tipSel.disabled = true;
+            uretimSel.innerHTML = '<option value="">Select type first</option>';
+            uretimSel.disabled = true;
+            yilSel.innerHTML = '<option value="">Select production year first</option>';
+            yilSel.disabled = true;
+            aySel.innerHTML = '<option value="">Select year first</option>';
+            aySel.disabled = true;
+
+            try {
+                const res = await fetch(`/tipler/${encodeURIComponent(marka)}`);
+                const data = await res.json();
+                tipSel.innerHTML = '<option value="">Select type...</option>';
+                data.tipler.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t;
+                    opt.textContent = t;
+                    tipSel.appendChild(opt);
+                });
+                tipSel.disabled = false;
+                tipSel.addEventListener('change', onTipChange);
+            } catch (e) {
+                tipSel.innerHTML = '<option value="">An error occurred</option>';
+                console.error('Error loading types:', e);
+            }
+            checkFormReady();
+        }
+
+        async function onTipChange() {
+            const marka = document.getElementById('marka-select').value;
+            const tip = document.getElementById('tip-select').value;
+            const uretimSel = document.getElementById('uretim-yili');
+            const yilSel = document.getElementById('hedef-yil');
+            const aySel = document.getElementById('hedef-ay');
+
+            if (!tip) {
+                uretimSel.innerHTML = '<option value="">Select type first</option>';
+                uretimSel.disabled = true;
+                yilSel.innerHTML = '<option value="">Select production year first</option>';
+                yilSel.disabled = true;
+                aySel.innerHTML = '<option value="">Select year first</option>';
+                aySel.disabled = true;
+                checkFormReady();
+                return;
+            }
+
+            uretimSel.innerHTML = '<option value="">Loading...</option>';
+            uretimSel.disabled = true;
+            yilSel.innerHTML = '<option value="">Select production year first</option>';
+            yilSel.disabled = true;
+            aySel.innerHTML = '<option value="">Select year first</option>';
+            aySel.disabled = true;
+
+            try {
+                const res = await fetch(`/uretim-yillari/${encodeURIComponent(marka)}/${encodeURIComponent(tip)}`);
+                const data = await res.json();
+                uretimSel.innerHTML = '<option value="">Select production year...</option>';
+                data.years.forEach(y => {
+                    const opt = document.createElement('option');
+                    opt.value = y;
+                    opt.textContent = y;
+                    uretimSel.appendChild(opt);
+                });
+                uretimSel.disabled = false;
+            } catch (e) {
+                uretimSel.innerHTML = '<option value="">Error loading years</option>';
+                console.error('Error loading production years:', e);
+            }
+            checkFormReady();
+        }
+
+        async function onUretimYiliChange() {
+            const marka = document.getElementById('marka-select').value;
+            const tip = document.getElementById('tip-select').value;
+            const uretim = document.getElementById('uretim-yili').value;
+            const yilSel = document.getElementById('hedef-yil');
+            const aySel = document.getElementById('hedef-ay');
+
+            if (!uretim) {
+                yilSel.innerHTML = '<option value="">Select production year first</option>';
+                yilSel.disabled = true;
+                aySel.innerHTML = '<option value="">Select year first</option>';
+                aySel.disabled = true;
+                checkFormReady();
+                return;
+            }
+
+            yilSel.innerHTML = '<option value="">Loading periods...</option>';
+            yilSel.disabled = true;
+            aySel.innerHTML = '<option value="">Select year first</option>';
+            aySel.disabled = true;
+
+            try {
+                const res = await fetch(`/hedef-donemler/${encodeURIComponent(marka)}/${encodeURIComponent(tip)}/${uretim}`);
+                const data = await res.json();
+                filteredDonemlerData = data.donemler;
+
+                const years = [...new Set(filteredDonemlerData.map(d => d.Veri_Yili))].sort((a, b) => b - a);
+                yilSel.innerHTML = '<option value="">Select year...</option>';
+                years.forEach(y => {
+                    const opt = document.createElement('option');
+                    opt.value = y;
+                    opt.textContent = y;
+                    yilSel.appendChild(opt);
+                });
+
+                if (years.length > 0) {
+                    yilSel.disabled = false;
+                } else {
+                    yilSel.innerHTML = '<option value="">No data available for this vehicle</option>';
+                    yilSel.disabled = true;
+                }
+            } catch (e) {
+                yilSel.innerHTML = '<option value="">Error loading periods</option>';
+                console.error('Error loading target periods:', e);
+            }
+            checkFormReady();
+        }
+
+        async function loadDonemler() {
+            try {
+                const res = await fetch('/donemler');
+                const data = await res.json();
+                donemlerData = data.donemler;
+            } catch (e) {
+                console.error('Error loading period:', e);
+            }
+        }
+
+        function onYilChange() {
+            const yil = parseInt(document.getElementById('hedef-yil').value);
+            const aySel = document.getElementById('hedef-ay');
+
+            if (!yil) {
+                aySel.innerHTML = '<option value="">Select year first</option>';
+                aySel.disabled = true;
+                checkFormReady();
+                return;
+            }
+
+            let months = filteredDonemlerData
+                .filter(d => d.Veri_Yili === yil)
+                .map(d => d.Veri_Ayi)
+                .sort((a, b) => a - b);
+
+            if (yil === 2022) {
+                months = months.filter(m => m >= 2);
+            }
+
+            aySel.innerHTML = '<option value="">Select month...</option>';
+            months.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = `${m} - ${ayIsimleri[m] || m}`;
+                aySel.appendChild(opt);
+            });
+            aySel.disabled = false;
+            aySel.addEventListener('change', checkFormReady);
+            checkFormReady();
+        }
+
+        function checkFormReady() {
+            const marka = document.getElementById('marka-select').value;
+            const tip = document.getElementById('tip-select').value;
+            const yil = document.getElementById('hedef-yil').value;
+            const ay = document.getElementById('hedef-ay').value;
+            const uretim = document.getElementById('uretim-yili').value;
+
+            const ready = marka && tip && yil && ay && uretim;
+            document.getElementById('btn-predict').disabled = !ready;
+        }
+
+        document.getElementById('uretim-yili').addEventListener('change', onUretimYiliChange);
+        document.getElementById('hedef-yil').addEventListener('change', onYilChange);
+        document.getElementById('hedef-ay').addEventListener('change', checkFormReady);
+
+        async function tahminEt() {
+            const btn = document.getElementById('btn-predict');
+            const container = document.getElementById('result-container');
+
+            const payload = {
+                marka_adi: document.getElementById('marka-select').value,
+                tip_adi: document.getElementById('tip-select').value,
+                uretim_yili: parseInt(document.getElementById('uretim-yili').value),
+                hedef_yil: parseInt(document.getElementById('hedef-yil').value),
+                hedef_ay: parseInt(document.getElementById('hedef-ay').value)
+            };
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span>Calculating...';
+            container.innerHTML = '';
+
+            try {
+                const res = await fetch('/tahmin-et', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+
+                if (data.error) {
+                    container.innerHTML = `<div class="card result-card"><div class="error-msg">${data.error}</div></div>`;
+                    return;
+                }
+
+                renderResult(data, payload);
+            } catch (e) {
+                container.innerHTML = `<div class="card result-card"><div class="error-msg">Failed to connect to server. Please try again.</div></div>`;
+                console.error('Prediction error:', e);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Predict';
+                checkFormReady();
+            }
+        }
+
+        function renderResult(data, payload) {
+            const container = document.getElementById('result-container');
+
+            let segBadgeClass = '';
+            let segLabel = '';
+            if (data.kullanilan_model.includes('High')) {
+                segBadgeClass = 'segment-badge--high';
+                segLabel = 'High';
+            } else if (data.kullanilan_model.includes('Med')) {
+                segBadgeClass = 'segment-badge--med';
+                segLabel = 'Medium';
+            } else {
+                segBadgeClass = 'segment-badge--low';
+                segLabel = 'Low';
+            }
+
+            const formatTL = (v) => v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const formatUSD = (v) => v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            let comparisonHTML = '';
+            if (data.gercek_tl !== null) {
+                const isPositive = data.fark_tl >= 0;
+                const cls = isPositive ? 'comparison--positive' : 'comparison--negative';
+                const sign = isPositive ? '+' : '';
+                comparisonHTML = `
+                    <div class="comparison ${cls}">
+                        <div class="comparison__label">Real Value Comparison</div>
+                        <div class="comparison__values">
+                            <span class="comparison__real">${formatTL(data.gercek_tl)} ₺</span>
+                            <span class="comparison__diff">${sign}${formatTL(data.fark_tl)} ₺</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                comparisonHTML = `
+                    <div class="comparison comparison--positive" style="border-color: var(--border); background: var(--surface);">
+                        <div class="comparison__none">No real insurance data is available for this period.</div>
+                    </div>
+                `;
+            }
+
+            let metricsHTML = '';
+            if (data.history_points && data.history_points.length > 0) {
+                metricsHTML = `
+                    <div style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+                        <div class="result-card__title" style="margin-bottom: 0.8rem;">Model Evaluation & Historical Fit</div>
+                        
+                        <div class="result-grid" style="margin-bottom: 1rem;">
+                            <div class="result-item">
+                                <div class="result-item__label">Avg. Deviation (MAPE)</div>
+                                <div class="result-item__value" style="color: var(--accent); font-size: 1.1rem;">
+                                    ${(data.mape * 100).toFixed(2)}%
+                                </div>
+                            </div>
+                            <div class="result-item">
+                                <div class="result-item__label">Root Mean Sq. Error (RMSE)</div>
+                                <div class="result-item__value" style="font-size: 1.1rem;">
+                                    ${formatTL(data.rmse)} ₺
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="height: 200px; position: relative; margin-top: 1rem; margin-bottom: 1rem;">
+                            <canvas id="chart-history-fit"></canvas>
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                <div class="card result-card">
+                    <div class="result-card__title">Prediction Result</div>
+
+                    <div class="segment-row">
+                        <span class="segment-badge ${segBadgeClass}">${segLabel} Segment</span>
+                    </div>
+
+                    <div class="result-hero">
+                        <div class="result-hero__label">Predicted Insurance Value (Point Estimate)</div>
+                        <div class="result-hero__value">${formatTL(data.tahmin_tl)} ₺</div>
+                        <div class="result-hero__usd">≈ $${formatUSD(data.tahmin_usd)} USD</div>
+                    </div>
+
+                    <div class="result-grid">
+                        <div class="result-item">
+                            <div class="result-item__label">USD Rate</div>
+                            <div class="result-item__value">₺${data.dolar_kuru}</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-item__label">CPI (TÜFE)</div>
+                            <div class="result-item__value">${data.tufe}</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-item__label">Vehicle</div>
+                            <div class="result-item__value" style="font-size:0.8rem">${payload.marka_adi}</div>
+                        </div>
+                        <div class="result-item">
+                            <div class="result-item__label">Production Year</div>
+                            <div class="result-item__value">${payload.uretim_yili}</div>
+                        </div>
+                    </div>
+
+                    <div class="result-hero" style="border-top: 1px solid var(--border); border-bottom: none; margin-top: 1.5rem; margin-bottom: 0; padding-top: 1.5rem; padding-bottom: 0;">
+                        <div class="result-hero__label">95% Confidence Interval (Range Estimate)</div>
+                        <div class="result-hero__value" style="font-size: 1.3rem; background: var(--gradient-main); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 800;">
+                            ${formatTL(data.lower_tl)} ₺ &mdash; ${formatTL(data.upper_tl)} ₺
+                        </div>
+                        <div class="result-hero__usd" style="font-size: 0.8rem; margin-top: 0.2rem;">
+                            ≈ $${formatUSD(data.lower_usd)} &mdash; $${formatUSD(data.upper_usd)} USD
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(124,58,237,0.04); border: 1px dashed rgba(124,58,237,0.15); border-radius: var(--radius-sm); text-align: center;">
+                        <span style="font-size: 0.65rem; color: var(--text-secondary); font-weight: 500; display: block; line-height: 1.4;">
+                            <strong>Mathematical Interpretation:</strong> This is the 95% Confidence Interval calculated using the <strong>Student's t-distribution</strong> (&nu; = ${data.df}, t<sub>&alpha;/2</sub> = ${data.t_critical}) and the Relative Standard Error (RSE) of the dynamic regression model. The t-distribution dynamically adjusts the interval width for small sample sizes to ensure mathematical rigor.
+                        </span>
+                    </div>
+
+                    <div style="height: 160px; position: relative; margin-top: 1.25rem; margin-bottom: 1.25rem;">
+                        <canvas id="chart-bell-curve"></canvas>
+                    </div>
+
+                    ${metricsHTML}
+
+                    ${comparisonHTML}
+                </div>
+            `;
+
+            setTimeout(() => {
+                const canvas = document.getElementById('chart-bell-curve');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+
+                const mean = data.tahmin_tl;
+                const std = (data.upper_tl - data.lower_tl) / (2 * data.t_critical);
+                const df = data.df;
+
+                const points = [];
+                const steps = 80;
+                const rangeFactor = df < 5 ? 4.5 : 3.5;
+                const minX = mean - rangeFactor * std;
+                const maxX = mean + rangeFactor * std;
+                const stepSize = (maxX - minX) / steps;
+
+                for (let i = 0; i <= steps; i++) {
+                    const x = minX + i * stepSize;
+                    const val = (x - mean) / std;
+                    const y = Math.pow(1 + (val * val) / df, -(df + 1) / 2);
+                    points.push({ x: x, y: y });
+                }
+
+                const datasets = [
+                    {
+                        label: 'Olasılık Yoğunluğu',
+                        data: points,
+                        borderColor: '#7c3aed',
+                        backgroundColor: 'rgba(124, 58, 237, 0.15)',
+                        fill: true,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        showLine: true
+                    }
+                ];
+
+                if (data.gercek_tl !== null) {
+                    const realVal = (data.gercek_tl - mean) / std;
+                    const realY = Math.pow(1 + (realVal * realVal) / df, -(df + 1) / 2);
+                    datasets.push({
+                        label: 'Gerçek Değer',
+                        data: [{ x: data.gercek_tl, y: realY }],
+                        borderColor: '#00d4aa',
+                        backgroundColor: '#00d4aa',
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        showLine: false
+                    });
+                }
+
+                new Chart(ctx, {
+                    type: 'scatter',
+                    data: {
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => {
+                                        if (ctx.dataset.label === 'Gerçek Değer') {
+                                            return `Real Value: ${ctx.raw.x.toLocaleString('en-US', { maximumFractionDigits: 0 })} TL`;
+                                        }
+                                        return `Value: ${ctx.raw.x.toLocaleString('en-US', { maximumFractionDigits: 0 })} TL`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                grid: { color: 'rgba(255,255,255,0.03)' },
+                                ticks: {
+                                    font: { size: 9 },
+                                    callback: (v) => (v / 1000).toFixed(0) + 'K ₺'
+                                }
+                            },
+                            y: {
+                                display: false,
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            }, 200);
+
+            setTimeout(() => {
+                const fitCanvas = document.getElementById('chart-history-fit');
+                if (fitCanvas && data.history_points && data.history_points.length > 0) {
+                    const fitCtx = fitCanvas.getContext('2d');
+                    const labels = data.history_points.map(p => p.label);
+                    const realValues = data.history_points.map(p => p.real);
+                    const predValues = data.history_points.map(p => p.pred);
+
+                    new Chart(fitCtx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'Real Value',
+                                    data: realValues,
+                                    borderColor: '#00d4aa',
+                                    backgroundColor: 'rgba(0, 212, 170, 0.05)',
+                                    borderWidth: 2,
+                                    pointRadius: 3,
+                                    tension: 0.25,
+                                    fill: false
+                                },
+                                {
+                                    label: 'Model Fit',
+                                    data: predValues,
+                                    borderColor: '#7c3aed',
+                                    backgroundColor: 'rgba(124, 58, 237, 0.05)',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5],
+                                    pointRadius: 3,
+                                    tension: 0.25,
+                                    fill: false
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top',
+                                    labels: {
+                                        boxWidth: 12,
+                                        font: { size: 10 }
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (ctx) => {
+                                            return `${ctx.dataset.label}: ${ctx.raw.toLocaleString('en-US', { maximumFractionDigits: 0 })} TL`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    grid: { color: 'rgba(255,255,255,0.03)' },
+                                    ticks: { font: { size: 9 }, maxRotation: 45 }
+                                },
+                                y: {
+                                    grid: { color: 'rgba(255,255,255,0.03)' },
+                                    ticks: {
+                                        font: { size: 9 },
+                                        callback: (v) => (v / 1000).toFixed(0) + 'K ₺'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+            }, 250);
+
+            setTimeout(() => {
+                container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        }
+    </script>
+</body>
+
+</html>

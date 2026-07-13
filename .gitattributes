@@ -1,0 +1,2 @@
+*.csv filter=lfs diff=lfs merge=lfs -text
+kasko_data_cached.csv filter=lfs diff=lfs merge=lfs -text
